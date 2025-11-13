@@ -1,8 +1,10 @@
 # project_2
-project by israel fadlon
+# project by israel fadlon
 
 
 import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 # טעינת הנתונים למודל
 data = "/content/drive/MyDrive/Classroom/עותק של Covid19_With_GDP_Values.csv"
@@ -11,7 +13,7 @@ df.head()
 df.columns
 
 
-# DATA EXPOLRATION # 
+# DATA Preparation 
 
 # 1 #
 
@@ -43,13 +45,16 @@ if 'Date' in df.columns:
 # 5 #
 
  # DATA EXPLORATION 
+ # שמירה על עמודות YEAR
+if 'Date' in df.columns:
+    df['Year'] = pd.to_datetime(df['Date']).dt.year
 # GDP בדיקת מתאם
 corr = df.corr(numeric_only=True)
 corr_with_gdp = corr['GDP'].sort_values(ascending=False)
 corr_with_gdp
 
 
-        # DATA EXPLORATION #
+        
 
 
 import pandas as pd
@@ -57,7 +62,10 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 # 1 # 
-
+# GDP בדיקת מתאם
+corr = df.corr(numeric_only=True)
+corr_with_gdp = corr['GDP'].sort_values(ascending=False)
+corr_with_gd
 # רשימת העמודות החשובות בלבד
 important_cols = ['GDP', 'Confirmed', 'Deaths', 'Recovered', 'Unemployment', 'CPI']
 
@@ -97,7 +105,7 @@ plt.show()
 זה מצביע על כך שבטווח הנתונים שלך, השינוי בתוצר (GDP) לא הוסבר באופן ישיר ע"י שיעור האבטלה או מדד המחירים (CPI).
 כנראה שההשפעה של הקורונה, מדיניות ממשלתית ותנאים חיצוניים יצרו שונות שלא תלויה ישירות במדדים האלו.
 
-###❤️ 2. קשרים בין מאפיינים כלכליים (features)
+### ❤️ 2. קשרים בין מאפיינים כלכליים (features)
 
 - הקשר בין Unemployment ל־CPI גם הוא כמעט אפסי (‎0.04–0.08‎).
 כלומר, בתקופה הזו — לא נצפתה אינפלציה משמעותית כתוצאה מעלייה באבטלה או להפך.
@@ -106,7 +114,7 @@ plt.show()
 בשנים שלאחר הקורונה (2021–2022), השווקים היו במצב לא יציב. ממשלות הפעילו מדיניות מוניטרית ופיסקלית חזקה (כמו סובסידיות, הדפסות כסף, והורדות ריבית),
 שפגעו במתאם “הטבעי” שבין אבטלה לאינפלציה (עקומת פיליפס).
 
-###💬 3. השוואה בין השנים
+### 💬 3. השוואה בין השנים
 
 בין 2021 ל־2022 אין שינוי דרמטי, אבל ניתן  לראות   Unemployment שמר על קשר שלילי עקבי עם GDP (בערך ‎-0.09‎).
 כלומר, ככל שהתוצר גבוה יותר — שיעור האבטלה מעט נמוך יותר, גם אם החלש.
@@ -126,7 +134,7 @@ plt.show()
 הכלכלה הייתה בתהליך התאוששות אך עדיין לא במצב נורמלי, ולכן
 הקורלציות בין המשתנים הכלכליים הן חלשות יחסית.
 
-####📊 ניתן לפרש את זה כך:
+### 📊 ניתן לפרש את זה כך:
 
 הכלכלה הייתה מושפעת יותר מגורמים חיצוניים (כמו מדיניות ממשלתית או מגבלות בריאותיות)
 ופחות מהקשרים הכלכליים ה”רגילים”.
