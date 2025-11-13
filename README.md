@@ -93,8 +93,8 @@ plt.show()
 
 
 
-<div align= "left">
 
+# 3 #
 # (CorrelationAnalysis)       תובנות מתוך בדיקת 
 ## 1. קשרים חזקים עם העמודה המרכזית (GDP)
 
