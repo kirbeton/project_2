@@ -11,7 +11,7 @@ df.head()
 df.columns
 
 
-# # # DATA EXPOLRATION # # #
+# DATA EXPOLRATION # 
 
 # 1 #
 
@@ -42,7 +42,7 @@ if 'Date' in df.columns:
 
 # 5 #
 
-
+ # DATA EXPLORATION 
 # GDP בדיקת מתאם
 corr = df.corr(numeric_only=True)
 corr_with_gdp = corr['GDP'].sort_values(ascending=False)
