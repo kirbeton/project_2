@@ -56,6 +56,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+# 1 # 
 
 # רשימת העמודות החשובות בלבד
 important_cols = ['GDP', 'Confirmed', 'Deaths', 'Recovered', 'Unemployment', 'CPI']
@@ -68,6 +69,8 @@ df_2022 = df[df['Year'] == 2022][important_cols]
 corr_2021 = df_2021.corr(numeric_only=True)
 corr_2022 = df_2022.corr(numeric_only=True)
 
+# 2 # 
+
 # Heatmap לשנת 2021
 plt.figure(figsize=(6,5))
 sns.heatmap(corr_2021, annot=True, cmap='coolwarm', fmt=".2f")
@@ -79,7 +82,6 @@ plt.figure(figsize=(6,5))
 sns.heatmap(corr_2022, annot=True, cmap='coolwarm', fmt=".2f")
 plt.title("Correlation Heatmap – 2022 (Selected Features)")
 plt.show()
-
 
 
 
