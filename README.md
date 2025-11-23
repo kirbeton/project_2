@@ -50,7 +50,7 @@ import joblib
 
 data = "/content/drive/MyDrive/Classroom/עותק של Covid19_With_GDP_Values.csv"
 df = pd.read_csv(data)
-
+# כל הנתונים בעמודה הזאת שהיא המחוז של כל מדינה הם "0" או מילים לא רלונטיות , אז לדטא של המודל אין צורך בה   
 df = df.drop(columns=["Province/State", "Unnamed: 0"], errors='ignore')
 df.dropna(subset=['CPI'], inplace=True)
 df.drop_duplicates(inplace=True)
