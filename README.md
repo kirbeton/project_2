@@ -52,7 +52,6 @@ data = "/content/drive/MyDrive/Classroom/עותק של Covid19_With_GDP_Values.c
 df = pd.read_csv(data)
 
 df = df.drop(columns=["Province/State", "Unnamed: 0"], errors='ignore')
-df.replace(0, pd.NA, inplace=True)
 df.dropna(subset=['CPI'], inplace=True)
 df.drop_duplicates(inplace=True)
 
