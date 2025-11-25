@@ -426,3 +426,302 @@ print("\n🚀 Model and preprocessing reloaded successfully and ready for infere
 - מדדי פיתוח (HDI)  
 
 מודלים מבוססי מגמות מאקרו־כלכליות יתאימו הרבה יותר למשימה.
+
+
+
+
+
+```python
+# 📌 Customer Churn Prediction – Full Project Code
+## ✔️ כולל Data Preparation, EDA, Training, Evaluation, Deployment
+
+```python
+# =========================================================
+# 📦 Imports – כל הייבוא מרוכז בתחילת הקוד
+# =========================================================
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import (
+    accuracy_score, recall_score, f1_score,
+    confusion_matrix
+)
+import joblib
+
+# =========================================================
+# 📌 Data Preparation
+# =========================================================
+
+# טעינת הנתונים
+path = "/content/drive/MyDrive/Classroom/עותק של customer_churn_dataset.csv"
+df = pd.read_csv(path)
+
+df.head()
+df.columns
+
+# עמודת CustomerID היא מזהה בלבד → לא נותנת מידע על התנהגות → מסירים
+df = df.drop(columns=["CustomerID"])
+df.columns
+
+# בדיקת ערכים חסרים
+print("Missing Values:")
+print(df.isnull().sum())
+
+# בדיקת כפילויות
+print("Duplicate Rows:", df.duplicated().sum())
+
+# קידוד משתנים קטגוריאליים
+df = pd.get_dummies(df, drop_first=True)
+df.head()
+
+
+# =========================================================
+# 📊 Data Exploration
+# =========================================================
+
+# חישוב קורלציה
+corr = df.corr()
+corr
+
+# Heatmap
+plt.figure(figsize=(14, 10))
+sns.heatmap(corr, annot=True, cmap="coolwarm", fmt=".2f")
+plt.title("Correlation Heatmap")
+plt.show()
+
+# Pairplot
+sns.pairplot(df, height=2)
+plt.show()
+
+
+# =========================================================
+# 📌 Model Training – Scaling + Splitting
+# =========================================================
+
+# X & y
+X = df.drop("Churn", axis=1)
+y = df["Churn"]
+
+# חלוקה ל־Train/Test
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.3, random_state=42
+)
+
+# נרמול (Standardization)
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+X_train_scaled[:5]
+
+
+# =========================================================
+# 🤖 Logistic Regression – Grid Search
+# =========================================================
+
+log_params = {
+    'C': [0.01, 0.1, 1, 10],
+    'penalty': ['l2'],
+    'solver': ['lbfgs']
+}
+
+log_model = LogisticRegression(max_iter=500)
+log_grid = GridSearchCV(log_model, log_params, cv=5, scoring='f1')
+log_grid.fit(X_train_scaled, y_train)
+
+print("Optimal Logistic Regression Parameters:")
+print(log_grid.best_params_)
+
+log_best = log_grid.best_estimator_
+
+
+# =========================================================
+# 🤖 KNN – Grid Search
+# =========================================================
+
+knn_params = {
+    'n_neighbors': list(range(1, 21)),
+    'weights': ['uniform', 'distance']
+}
+
+knn = KNeighborsClassifier()
+knn_grid = GridSearchCV(knn, knn_params, cv=5, scoring='f1')
+knn_grid.fit(X_train_scaled, y_train)
+
+print("Optimal KNN Parameters:")
+print(knn_grid.best_params_)
+
+knn_best = knn_grid.best_estimator_
+
+
+# =========================================================
+# 🤖 SVM – Grid Search
+# =========================================================
+
+svm_params = {
+    'C': [0.1, 1, 10],
+    'kernel': ['rbf', 'linear'],
+    'gamma': ['scale', 'auto']
+}
+
+svm = SVC(probability=True)
+svm_grid = GridSearchCV(svm, svm_params, cv=5, scoring='f1')
+svm_grid.fit(X_train_scaled, y_train)
+
+print("Optimal SVM Parameters:")
+print(svm_grid.best_params_)
+
+svm_best = svm_grid.best_estimator_
+
+
+# =========================================================
+# 🌲 Random Forest – Grid Search
+# =========================================================
+
+rf_params = {
+    'n_estimators': [50, 100, 200],
+    'max_depth': [3, 5, 10, None],
+    'min_samples_split': [2, 5, 10],
+    'bootstrap': [True, False]
+}
+
+rf = RandomForestClassifier()
+rf_grid = GridSearchCV(rf, rf_params, cv=5, scoring='f1')
+rf_grid.fit(X_train, y_train)
+
+print("Optimal Random Forest Parameters:")
+print(rf_grid.best_params_)
+
+rf_best = rf_grid.best_estimator_
+
+
+# =========================================================
+# 📌 Predictions (לפי דרישות הפרויקט)
+# =========================================================
+
+y_pred_log = log_best.predict(X_test_scaled)
+y_proba_log = log_best.predict_proba(X_test_scaled)[:, 1]
+
+y_pred_knn = knn_best.predict(X_test_scaled)
+y_proba_knn = knn_best.predict_proba(X_test_scaled)[:, 1]
+
+y_pred_svm = svm_best.predict(X_test_scaled)
+y_proba_svm = svm_best.predict_proba(X_test_scaled)[:, 1]
+
+y_pred_rf = rf_best.predict(X_test)
+y_proba_rf = rf_best.predict_proba(X_test)[:, 1]
+
+
+# =========================================================
+# 📌 Model Evaluation – Accuracy, Recall, F1
+# =========================================================
+
+results = {"Model": [], "Accuracy": [], "Recall": [], "F1 Score": []}
+
+def evaluate_model(name, y_test, y_pred):
+    acc = accuracy_score(y_test, y_pred)
+    rec = recall_score(y_test, y_pred)
+    f1 = f1_score(y_test, y_pred)
+
+    results["Model"].append(name)
+    results["Accuracy"].append(acc)
+    results["Recall"].append(rec)
+    results["F1 Score"].append(f1)
+
+    print(f"\n{name}:")
+    print("Accuracy:", acc)
+    print("Recall:", rec)
+    print("F1 Score:", f1)
+
+
+evaluate_model("Logistic Regression", y_test, y_pred_log)
+evaluate_model("KNN", y_test, y_pred_knn)
+evaluate_model("SVM", y_test, y_pred_svm)
+evaluate_model("Random Forest", y_test, y_pred_rf)
+
+
+# =========================================================
+# 📌 Confusion Matrices
+# =========================================================
+
+def plot_confusion(model_name, y_test, y_pred):
+    cm = confusion_matrix(y_test, y_pred)
+    plt.figure(figsize=(5,4))
+    sns.heatmap(cm, annot=True, cmap="Blues", fmt="d")
+    plt.title(f"Confusion Matrix – {model_name}")
+    plt.xlabel("Predicted")
+    plt.ylabel("Actual")
+    plt.show()
+
+plot_confusion("Logistic Regression", y_test, y_pred_log)
+plot_confusion("KNN", y_test, y_pred_knn)
+plot_confusion("SVM", y_test, y_pred_svm)
+plot_confusion("Random Forest", y_test, y_pred_rf)
+
+
+# =========================================================
+# 📌 Model Comparison Table
+# =========================================================
+
+results_df = pd.DataFrame(results)
+results_df
+
+
+# =========================================================
+# 🏆 Selecting the Best Model
+# =========================================================
+
+best_model_name = results_df.iloc[results_df["F1 Score"].idxmax()]["Model"]
+print("Best Model:", best_model_name)
+
+
+# =========================================================
+# 🎯 Training Best Model on Full Dataset
+# =========================================================
+
+if best_model_name == "Logistic Regression":
+    final_model = log_best
+    X_all_scaled = scaler.fit_transform(X)
+    final_model.fit(X_all_scaled, y)
+
+elif best_model_name == "KNN":
+    final_model = knn_best
+    X_all_scaled = scaler.fit_transform(X)
+    final_model.fit(X_all_scaled, y)
+
+elif best_model_name == "SVM":
+    final_model = svm_best
+    X_all_scaled = scaler.fit_transform(X)
+    final_model.fit(X_all_scaled, y)
+
+elif best_model_name == "Random Forest":
+    final_model = rf_best
+    final_model.fit(X, y)  # RF לא חייב Scaling
+
+
+# =========================================================
+# 💾 Export Model + Scaler
+# =========================================================
+
+joblib.dump(final_model, "final_model.joblib")
+joblib.dump(scaler, "scaler.joblib")
+
+print("Model and scaler saved successfully!")
+
+
+# =========================================================
+# 🔄 Loading Saved Model Back
+# =========================================================
+
+loaded_model = joblib.load("final_model.joblib")
+loaded_scaler = joblib.load("scaler.joblib")
+
+print("Model and scaler loaded successfully!")
+```
