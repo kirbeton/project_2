@@ -178,102 +178,99 @@ plt.show()
 # 📌 Regression – Multi Model Training (Correct Version)
 # ============================================================
 
-# Features & target
+# ========================
+# Features & Target
+# ========================
 X = df[['Confirmed', 'Deaths', 'Recovered', 'Unemployment', 'CPI']]
 y = df['GDP']
 
-# Train/Test Split (NO data leakage)
+# ========================
+# Train/Test Split
+# ========================
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.3, random_state=42
 )
 
+# ========================
 # Scaling – fit ONLY on train
+# ========================
 scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled  = scaler.transform(X_test)
 
 # ============================================================
-# 1️⃣ Linear Regression
+# 1️⃣ Linear Regression + K-Fold CV
 # ============================================================
 lin_model = LinearRegression()
 lin_model.fit(X_train_scaled, y_train)
+
+lin_cv = cross_val_score(lin_model, X_train_scaled, y_train, cv=5, scoring='r2')
 lin_r2 = lin_model.score(X_test_scaled, y_test)
 
+print("📌 Linear Regression – CV R²:", lin_cv)
+print("📌 Linear Regression – Mean CV:", lin_cv.mean())
+print("📌 Linear Regression – Test R²:", lin_r2)
+
+# OUTPUT:
+# 📌 Linear Regression – CV R²: [-0.036  0.437  0.309 -0.632 -89.182]
+# 📌 Linear Regression – Mean CV: -17.8209
+# 📌 Linear Regression – Test R²: 0.3012
+
 # ============================================================
-# 2️⃣ Ridge Regression (with CV)
+# 2️⃣ Ridge Regression (α selection via CV)
 # ============================================================
 alphas = np.logspace(-3, 3, 50)
-
 ridge = RidgeCV(alphas=alphas, cv=5, scoring='r2')
 ridge.fit(X_train_scaled, y_train)
 ridge_r2 = ridge.score(X_test_scaled, y_test)
 
+print("\n📌 Ridge Optimal α:", ridge.alpha_)
+print("📌 Ridge Test R²:", ridge_r2)
+
+# OUTPUT:
+# 📌 Ridge Optimal α: 1000.0
+# 📌 Ridge Test R²: 0.3273
+
 # ============================================================
-# 3️⃣ Lasso Regression (with CV)
+# 3️⃣ Lasso Regression (α selection via CV)
 # ============================================================
 lasso = LassoCV(alphas=alphas, cv=5, random_state=42)
 lasso.fit(X_train_scaled, y_train)
 lasso_r2 = lasso.score(X_test_scaled, y_test)
 
+print("\n📌 Lasso Optimal α:", lasso.alpha_)
+print("📌 Lasso Test R²:", lasso_r2)
+print("📌 Lasso – Non-zero coefficients:", np.sum(lasso.coef_ != 0))
+
+# OUTPUT:
+# 📌 Lasso Optimal α: 0.001
+# 📌 Lasso Test R²: 0.3012
+# 📌 Lasso – Non-zero coefficients: 5
+
 # ============================================================
-# 4️⃣ Polynomial Regression – choose optimal degree using CV
+# 4️⃣ Polynomial Regression – Optimal Degree Selection
 # ============================================================
 degrees = [1, 2, 3, 4]
 poly_scores = []
 
+print("\n🔍 Polynomial Degree Search:")
 for d in degrees:
     poly = make_pipeline(StandardScaler(), PolynomialFeatures(d), LinearRegression())
     cv_score = cross_val_score(poly, X, y, cv=5, scoring='r2').mean()
     poly_scores.append(cv_score)
-    print(f"Degree {d} → Mean CV R²: {cv_score:.3f}")
+    print(f"Degree {d} → Mean CV R²: {cv_score:.4f}")
+
+# OUTPUT:
+# Degree 1 → Mean CV R²: -14.157
+# Degree 2 → Mean CV R²: -106364.554
+# Degree 3 → Mean CV R²: -7317990163.741
+# Degree 4 → Mean CV R²: -69857219883522264.000
 
 best_degree = degrees[np.argmax(poly_scores)]
+print("\n⭐ Best Polynomial Degree:", best_degree)
 
-# Train final polynomial model using best degree
-best_poly = make_pipeline(StandardScaler(), PolynomialFeatures(best_degree), LinearRegression())
-best_poly.fit(X_train, y_train)
-poly_r2 = best_poly.score(X_test, y_test)
-
-# ============================================================
-# 5️⃣ Compare Models
-# ============================================================
-results = {
-    "Linear Regression": lin_r2,
-    "Ridge Regression": ridge_r2,
-    "Lasso Regression": lasso_r2,
-    f"Polynomial (deg={best_degree})": poly_r2
-}
-
-print("\n=== R² Scores ===")
-for name, score in results.items():
-    print(f"{name}: {score:.4f}")
-
-best_model_name = max(results, key=results.get)
-print(f"\n🏆 Best Model: {best_model_name}")
-
-# Select final model
-if best_model_name == "Linear Regression":
-    final_model = lin_model
-elif best_model_name == "Ridge Regression":
-    final_model = ridge
-elif best_model_name == "Lasso Regression":
-    final_model = lasso
-else:
-    final_model = best_poly
-
-# ============================================================
-# 6️⃣ Save model & scaler
-# ============================================================
-joblib.dump(final_model, "final_regression_model.joblib")
-joblib.dump(scaler, "regression_scaler.joblib")
-
-print("\n💾 Regression model saved!")
-
-# Reload test
-loaded_model = joblib.load("final_regression_model.joblib")
-loaded_scaler = joblib.load("regression_scaler.joblib")
-
-print("✅ Model and scaler loaded successfully.")
+# OUTPUT:
+# ⭐ Best Polynomial Degree: 1
 
 ```
 
