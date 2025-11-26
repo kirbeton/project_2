@@ -173,7 +173,7 @@ plt.show()
 
 # LINEAR REGRESSION MULTIE MODEL TRAINING
 
-```
+```python
 # ============================================================
 # 📌 Regression – Multi Model Training (Correct Version)
 # ============================================================
