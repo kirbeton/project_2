@@ -21,6 +21,7 @@
 ## 🧮 קוד מלא לניתוח ו-Model Training
 
 ```python
+
 # project_2
 # Project by Israel Fadlon
 
@@ -55,9 +56,17 @@ df = df.drop(columns=["Province/State", "Unnamed: 0"], errors='ignore')
 df.dropna(subset=['CPI'], inplace=True)
 df.drop_duplicates(inplace=True)
 
+
+
+
 if 'Date' in df.columns:
     df['Year'] = pd.to_datetime(df['Date']).dt.year
+    df = df.drop(columns=['Date'])   # ← חייב
 
+# עכשיו ה־DataFrame נקי ממחרוזות / תאריכים
+df = df.groupby(["Country/Region", "Year"], as_index=False).mean()
+
+df = df.fillna(df.mean(numeric_only=True))
 
 # =======================
 # 2️⃣ DATA EXPLORATION
