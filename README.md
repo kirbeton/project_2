@@ -165,240 +165,106 @@ plt.show()
 # LINEAR REGRESSION MULTIE MODEL TRAINING
 
 ```
-# טעינה והכנה בסיסית של הנתונים
-if 'Year' not in df.columns and 'Date' in df.columns:
-    df['Year'] = pd.to_datetime(df['Date']).dt.year
-df = df[df['Year'].isin([2021, 2022])].copy() 
+# ============================================================
+# 📌 Regression – Multi Model Training (Correct Version)
+# ============================================================
 
-# הגדרת העמודות החשובות למודל
-model_numeric_cols = ['Confirmed', 'Deaths', 'Recovered', 'Unemployment', 'CPI', 'GDP']
-
-# הגדרת העמודות למספרים
-for col in model_numeric_cols:
-    df[col] = pd.to_numeric(df[col], errors='coerce')
-
-# טיפול בערכים חסרים
-df[model_numeric_cols] = df[model_numeric_cols].fillna(df[model_numeric_cols].mean())
-
-# בנייצ מודל לשנים 2021 ,2022 
-for year in [2021, 2022]:
-    print(f"\n🧩 ===== ניתוח עבור השנה {year} ====")
-
-    df_year = df[df['Year'] == year]
-
-    #הגדרת משתנים למודל 
-    X = df_year[['Confirmed', 'Deaths', 'Recovered', 'Unemployment', 'CPI']]
-    y = df_year['GDP']
-
-    #  נרמול לסטיית תקן 1 וממוצע 0
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X)
-
-    #  חילוק של הנתונים ל 70%  אימון המודל ,ו 30% בדיקה אמיתית
-    X_train, X_test, y_train, y_test = train_test_split(
-        X_scaled, y, test_size=0.3, random_state=42
-    )
-
-    # 2 # 
-
-    # מחשב את הקשר בין המשתנים (X) לבין התוצר (GDP).
-    model = LinearRegression()
-    model.fit(X_train, y_train)
-
-    # 3 #
-
-    # תוצאות
-    train_score = model.score(X_train, y_train)
-    test_score = model.score(X_test, y_test)
-    cv_scores = cross_val_score(model, X_scaled, y, cv=5, scoring='r2')
-
-    print(f"📊 Train R²: {train_score:.3f}")
-    print(f"📈 Test R²: {test_score:.3f}")
-    print("🔁 Cross Validation R² scores:", cv_scores)
-    print("⭐ Average R²:", np.mean(cv_scores))
-
-
-#🧩 ===== ניתוח עבור השנה 2021 ====
-#📊 Train R²: 0.052
-#📈 Test R²: 0.360
-#🔁 Cross Validation R² scores: [-3.62191755e-02  4.37463648e-01  3.09127470e-01 -6.32888672e-01
-# -8.91820078e+01]
-#⭐ Average R²: -17.820904911486192
-
-#🧩 ===== ניתוח עבור השנה 2022 ====
-#📊 Train R²: 0.054
-#📈 Test R²: 0.257
-#🔁 Cross Validation R² scores: [-3.80816578e-02  3.98185317e-01 -2.47026004e-01 -1.23598581e-01
-# -5.64311892e+01]
-#⭐ Average R²: -11.288342021292618
-
-
-# Multi model training 
-
-# 1 # 
-
-
-# מאפיינים ותיוג
+# Features & target
 X = df[['Confirmed', 'Deaths', 'Recovered', 'Unemployment', 'CPI']]
 y = df['GDP']
 
-# נרמול
+# Train/Test Split (NO data leakage)
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.3, random_state=42
+)
+
+# Scaling – fit ONLY on train
 scaler = StandardScaler()
-X_scaled = scaler.fit_transform(X)
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled  = scaler.transform(X_test)
 
-# מודל ליניארי רגיל
+# ============================================================
+# 1️⃣ Linear Regression
+# ============================================================
 lin_model = LinearRegression()
+lin_model.fit(X_train_scaled, y_train)
+lin_r2 = lin_model.score(X_test_scaled, y_test)
 
-# K-Fold Cross Validation
-kfold = KFold(n_splits=5, shuffle=True, random_state=42)
-scores = cross_val_score(lin_model, X_scaled, y, cv=kfold, scoring='r2')
-
-print("Linear Regression CV R² Scores:", scores)
-print("Average R²:", np.mean(scores))
-
-# 2 # 
-
-
-# להוסיף רגולריזציה (L2 penalty) שמונעת מהמודל “להגזים” עם מקדמים גדולים מדי.
-# זה עוזר במקרים של multicollinearity או נתונים רועשים.
+# ============================================================
+# 2️⃣ Ridge Regression (with CV)
+# ============================================================
 alphas = np.logspace(-3, 3, 50)
 
+ridge = RidgeCV(alphas=alphas, cv=5, scoring='r2')
+ridge.fit(X_train_scaled, y_train)
+ridge_r2 = ridge.score(X_test_scaled, y_test)
 
-ridge_model = RidgeCV(alphas=alphas, cv=5, scoring='r2')
-ridge_model.fit(X_scaled, y)
+# ============================================================
+# 3️⃣ Lasso Regression (with CV)
+# ============================================================
+lasso = LassoCV(alphas=alphas, cv=5, random_state=42)
+lasso.fit(X_train_scaled, y_train)
+lasso_r2 = lasso.score(X_test_scaled, y_test)
 
-# בדיקה
-print(f"Optimal alpha (λ): {ridge_model.alpha_}")
-print(f"R² Score (using best λ): {ridge_model.score(X_scaled, y):.3f}")
-
-# 3 # 
-
-
-
-# טווח ערכים של λ (אלפא)
-alphas = np.logspace(-3, 3, 50)
-
-lasso_model = LassoCV(alphas=alphas, cv=5, random_state=42)
-lasso_model.fit(X_scaled, y)
-
-print(f"Optimal alpha (λ): {lasso_model.alpha_}")
-print(f"R² Score (using best λ): {lasso_model.score(X_scaled, y):.3f}")
-
-
-# פה אפשר גם לראות כמה מקדמים נשארו עם !=0
-print("Number of features kept:", np.sum(lasso_model.coef_ != 0))
-
-# 4 # 
-
-# לאפשר למודל “להתכופף” — כלומר לזהות קשרים לא ליניאריים בין המשתנים
-
-
-degrees = [1, 2, 3, 4, 5]
-avg_scores = []
+# ============================================================
+# 4️⃣ Polynomial Regression – choose optimal degree using CV
+# ============================================================
+degrees = [1, 2, 3, 4]
+poly_scores = []
 
 for d in degrees:
-    poly_model = make_pipeline(PolynomialFeatures(d), LinearRegression())
-    score = cross_val_score(poly_model, X_scaled, y, cv=5, scoring='r2').mean()
-    avg_scores.append(score)
-    print(f"Degree {d} → Mean R²: {score:.3f}")
+    poly = make_pipeline(StandardScaler(), PolynomialFeatures(d), LinearRegression())
+    cv_score = cross_val_score(poly, X, y, cv=5, scoring='r2').mean()
+    poly_scores.append(cv_score)
+    print(f"Degree {d} → Mean CV R²: {cv_score:.3f}")
 
-# בחירת הדרגה הטובה ביותר
-best_degree = degrees[np.argmax(avg_scores)]
-print(f"\nOptimal Polynomial Degree: {best_degree}")
+best_degree = degrees[np.argmax(poly_scores)]
 
+# Train final polynomial model using best degree
+best_poly = make_pipeline(StandardScaler(), PolynomialFeatures(best_degree), LinearRegression())
+best_poly.fit(X_train, y_train)
+poly_r2 = best_poly.score(X_test, y_test)
 
-
-
-
-# אותם מאפיינים ותיוגים
-X = df[['Confirmed', 'Deaths', 'Recovered', 'Unemployment', 'CPI']]
-y = df['GDP']
-
-# נרמול
-scaler = StandardScaler()
-X_scaled = scaler.fit_transform(X)
-
-# הגדרות אופטימליות מהשלב הקודם
-ridge_opt_alpha =  ridge_model.alpha_
-lasso_opt_alpha = lasso_model.alpha_
-best_degree = best_degree  # מהפולינומי הקודם
-
-# בניית המודלים הסופיים
-models = {
-    "Linear Regression": LinearRegression(),
-    "RidgeCV": RidgeCV(alphas=[ridge_opt_alpha]),
-    "LassoCV": LassoCV(alphas=[lasso_opt_alpha]),
-    f"Polynomial (deg={best_degree})": make_pipeline(PolynomialFeatures(best_degree), LinearRegression())
+# ============================================================
+# 5️⃣ Compare Models
+# ============================================================
+results = {
+    "Linear Regression": lin_r2,
+    "Ridge Regression": ridge_r2,
+    "Lasso Regression": lasso_r2,
+    f"Polynomial (deg={best_degree})": poly_r2
 }
 
+print("\n=== R² Scores ===")
+for name, score in results.items():
+    print(f"{name}: {score:.4f}")
 
+best_model_name = max(results, key=results.get)
+print(f"\n🏆 Best Model: {best_model_name}")
 
-print("===== Optimal Parameters & Coefficients =====")
-for name, model in models.items():
-    model.fit(X_scaled, y)
-    print(f"\n🔹 {name}")
-    if hasattr(model, "alpha_"):
-        print(f"Optimal λ (alpha): {model.alpha_}")
-    if hasattr(model, "coef_"):
-        print("Beta Coefficients:")
-        for feature, coef in zip(['Confirmed', 'Deaths', 'Recovered', 'Unemployment', 'CPI'], model.coef_):
-            print(f"  {feature}: {coef:.4f}")
-    elif hasattr(model[-1], "coef_"):  # למודלים עם pipeline
-        print("Beta Coefficients (Polynomial):")
-        print(model[-1].coef_)
+# Select final model
+if best_model_name == "Linear Regression":
+    final_model = lin_model
+elif best_model_name == "Ridge Regression":
+    final_model = ridge
+elif best_model_name == "Lasso Regression":
+    final_model = lasso
+else:
+    final_model = best_poly
 
-results = []
+# ============================================================
+# 6️⃣ Save model & scaler
+# ============================================================
+joblib.dump(final_model, "final_regression_model.joblib")
+joblib.dump(scaler, "regression_scaler.joblib")
 
-for name, model in models.items():
-    y_pred = model.predict(X_scaled)
-    mae = mean_absolute_error(y, y_pred)
-    mse = mean_squared_error(y, y_pred)
-    rmse = np.sqrt(mse)
-    r2 = model.score(X_scaled, y)
-    results.append([name, mae, mse, rmse, r2])
+print("\n💾 Regression model saved!")
 
-results_df = pd.DataFrame(results, columns=['Model', 'MAE', 'MSE', 'RMSE', 'R²'])
-print("\n===== Model Evaluation =====")
-print(results_df)
+# Reload test
+loaded_model = joblib.load("final_regression_model.joblib")
+loaded_scaler = joblib.load("regression_scaler.joblib")
 
-plt.figure(figsize=(8,5))
-plt.bar(results_df['Model'], results_df['R²'], color='skyblue')
-plt.title('📈 Model Accuracy (R² Comparison)')
-plt.ylabel('R² Score')
-plt.xticks(rotation=30)
-plt.show()
-
-
-best_model_name = results_df.loc[results_df['R²'].idxmax(), 'Model']
-print(f"\n✅ Best Performing Model: {best_model_name}")
-
-
-best_model = models[best_model_name]
-best_model.fit(X_scaled, y)
-print("\n🏁 Final model trained on full dataset!")
-
-    
-
-
-joblib.dump(best_model, "final_model.joblib")
-joblib.dump(scaler, "scaler.joblib")
-
-# במקרה של מודל פולינומי – שמור גם את ה-Polynomial Converter
-if "Polynomial" in best_model_name:
-    joblib.dump(best_model.named_steps['polynomialfeatures'], "poly_converter.joblib")
-
-print("\n💾 Model and preprocessing saved successfully!")
-
-
-loaded_model = joblib.load("final_model.joblib")
-loaded_scaler = joblib.load("scaler.joblib")
-
-if "Polynomial" in best_model_name:
-    loaded_poly = joblib.load("poly_converter.joblib")
-    print("✅ Polynomial converter loaded too!")
-
-print("\n🚀 Model and preprocessing reloaded successfully and ready for inference.")
-
+print("✅ Model and scaler loaded successfully.")
 
 ```
 
@@ -429,11 +295,19 @@ print("\n🚀 Model and preprocessing reloaded successfully and ready for infere
 
 
 
+---
+
+<br><br><br>
 
 
-```python
-# 📌 Customer Churn Prediction – Full Project Code
-## ✔️ כולל Data Preparation, EDA, Training, Evaluation, Deployment
+<div align="center">
+ 
+
+
+
+ <h1> 📌 Customer Churn Prediction – Full Project Code</h1>
+✔️ כולל Data Preparation, EDA, Training, Evaluation, Deployment
+</div>
 
 ```python
 # =========================================================
